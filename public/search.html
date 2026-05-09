@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cứu Vi phạm Nồng độ cồn | Cổng thông tin Công cộng</title>
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        .search-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+            color: #fff;
+            padding: 80px 20px;
+            text-align: center;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+        }
+        .search-container {
+            max-width: 800px;
+            margin: -60px auto 40px;
+            padding: 0 20px;
+        }
+        .search-card {
+            background: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            border-left: 4px solid var(--primary);
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: slideUp 0.4s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body style="background: #f1f5f9;">
+    <header class="search-hero">
+        <h1 style="font-size: 2.5rem; margin-bottom: 15px;">Tra cứu vi phạm giao thông</h1>
+        <p style="opacity: 0.9; font-size: 1.1rem;">Hệ thống tra cứu nồng độ cồn dành cho công dân</p>
+    </header>
+
+    <main class="search-container">
+        <div class="search-card">
+            <div class="form-group">
+                <label style="font-weight: 600;">Số Căn cước công dân (12 số)</label>
+                <input type="text" id="searchCCCD" class="form-control" placeholder="Nhập số CCCD của bạn..." style="height: 55px; font-size: 1.1rem;">
+            </div>
+            <button class="btn btn-primary" onclick="performSearch()" style="width: 100%; height: 55px; font-size: 1.1rem; font-weight: 600; margin-top: 10px;">TRA CỨU NGAY</button>
+            
+            <div id="searchStatus" style="margin-top: 20px; text-align: center; display: none;">
+                <div class="spinner"></div> Đang tìm kiếm hồ sơ...
+            </div>
+        </div>
+
+        <div id="resultsArea" style="margin-top: 40px;">
+            <!-- Kết quả sẽ hiện ở đây -->
+        </div>
+    </main>
+
+    <footer style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.9rem;">
+        &copy; 2026 Cục Cảnh sát Giao thông - Bộ Công an. Mọi quyền được bảo lưu.
+    </footer>
+
+    <script>
+        async function performSearch() {
+            const cccd = document.getElementById('searchCCCD').value;
+            const resultsArea = document.getElementById('resultsArea');
+            const status = document.getElementById('searchStatus');
+
+            if (!cccd || cccd.length < 12) {
+                alert("Vui lòng nhập đúng 12 số CCCD!");
+                return;
+            }
+
+            status.style.display = 'block';
+            resultsArea.innerHTML = '';
+
+            try {
+                const res = await fetch(`/vipham/tra-cuu?keyword=${cccd}`);
+                const data = await res.json();
+                status.style.display = 'none';
+
+                if (!data || data.length === 0) {
+                    resultsArea.innerHTML = `
+                        <div class="card" style="text-align: center; padding: 40px;">
+                            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+                            <h2 style="color: var(--success);">Chúc mừng!</h2>
+                            <p>Không tìm thấy hồ sơ vi phạm nào liên quan đến số CCCD này.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                resultsArea.innerHTML = `<h2 style="margin-bottom: 20px;">Tìm thấy ${data.length} hồ sơ vi phạm</h2>`;
+                
+                data.forEach(vp => {
+                    resultsArea.innerHTML += `
+                        <div class="result-item">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                                <div>
+                                    <h3 style="color: var(--primary); margin-bottom: 5px;">Mã vụ việc: ${vp.Ma_VuViec}</h3>
+                                    <p style="font-size: 0.9rem; color: var(--text-muted);">${new Date(vp.ThoiGianViPham).toLocaleString('vi-VN')}</p>
+                                </div>
+                                <span class="badge ${vp.TrangThaiThanhToan === 'Đã thanh toán' ? 'badge-success' : 'badge-danger'}" style="padding: 8px 15px; font-size: 0.9rem;">
+                                    ${vp.TrangThaiThanhToan}
+                                </span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <p style="margin-bottom: 8px;"><b>📍 Địa điểm:</b> ${vp.DiaDiem}</p>
+                                    <p style="margin-bottom: 8px;"><b>🚗 Biển số:</b> ${vp.BienSoXe}</p>
+                                    <p><b>🍷 Nồng độ cồn:</b> ${vp.NongDoCon} mg/L</p>
+                                </div>
+                                <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">Số tiền xử phạt:</p>
+                                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--danger);">${new Intl.NumberFormat('vi-VN').format(vp.SoTienPhat || 0)}đ</div>
+                                    <p style="font-size: 0.85rem; margin-top: 5px; color: var(--text-muted);">Trạng thái: ${vp.TrangThaiThanhToan}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+            } catch (error) {
+                status.style.display = 'none';
+                alert("Lỗi kết nối đến hệ thống!");
+            }
+        }
+    </script>
+</body>
+</html>

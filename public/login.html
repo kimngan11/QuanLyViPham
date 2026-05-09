@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | Hệ thống Quản lý Vi phạm Nồng độ cồn</title>
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        .login-wrapper {
+            height: 100vh;
+            background: radial-gradient(circle at top right, #a0bbe8, #b9bfce);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #000;
+            margin-bottom: 15px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body class="login-wrapper flex-center">
+
+    <div class="login-card glass animate-fade-in">
+        <div class="logo-section">
+            <div class="logo-icon">👮</div>
+            <h1 style="font-size: 1.5rem; margin-bottom: 5px;">Hệ thống Quản lý</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Vi phạm Nồng độ cồn</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" class="form-control" placeholder="Nhập tên đăng nhập" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="display: flex; align-items: center; cursor: pointer; font-size: 0.85rem;">
+                    <input type="checkbox" style="margin-right: 8px;"> Ghi nhớ đăng nhập
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary"
+                style="width: 100%; margin-bottom: 15px; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">ĐĂNG
+                NHẬP HỆ THỐNG</button>
+            <div style="text-align: center; margin: 20px 0; position: relative;">
+                <span
+                    style="background: #fff; padding: 0 10px; position: relative; z-index: 1; color: var(--text-muted); font-size: 0.9rem;">DÀNH
+                    CHO CÔNG DÂN</span>
+                <hr
+                    style="position: absolute; top: 50%; width: 100%; border: 0; border-top: 1px solid var(--border); margin: 0;">
+            </div>
+            <a href="search.html" class="btn btn-outline"
+                style="width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center;">TRA
+                CỨU VI PHẠM NHANH</a>
+        </form>
+
+        <div style="margin-top: 25px; text-align: center; font-size: 0.85rem;">
+            <p style="color: var(--text-muted);">
+                Quên mật khẩu? <a href="#" style="color: var(--primary); text-decoration: none;">Liên hệ quản trị</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+
+</html>
