@@ -17,6 +17,16 @@ exports.createOfficer = (req, res) => {
     });
 };
 
+exports.updateOfficer = (req, res) => {
+    const { id } = req.params;
+    const officerData = req.body;
+    const sql = "UPDATE CAN_BO SET ? WHERE Ma_CanBo = ?";
+    db.query(sql, [officerData, id], (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true, message: "Cập nhật cán bộ thành công" });
+    });
+};
+
 exports.deleteOfficer = (req, res) => {
     const { id } = req.params;
     const sql = "DELETE FROM CAN_BO WHERE Ma_CanBo = ?";

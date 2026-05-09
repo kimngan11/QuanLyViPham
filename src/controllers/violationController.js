@@ -135,16 +135,23 @@ exports.updateThanhToan = (req, res) => {
 };
 
 exports.getThongKe = (req, res) => {
-    const { thang, nam } = req.query;
+    const { month, year } = req.query;
+    
+    let whereClause = "WHERE YEAR(vp.ThoiGianViPham) = ?";
+    let params = [year];
+
+    if (month !== 'all') {
+        whereClause += " AND MONTH(vp.ThoiGianViPham) = ?";
+        params.push(month);
+    }
+
     const statsSql = `
         SELECT 
-            COUNT(DISTINCT vp.Ma_NguoiViPham) as tongNguoiViPham,
-            COUNT(vp.Ma_VuViec) as tongVuViec,
-            SUM(CASE WHEN qd.Ma_QuyetDinh IS NOT NULL THEN 1 ELSE 0 END) as soVuDaXuLy,
-            SUM(CASE WHEN qd.Ma_TrangThaiThanhToan = 'TTTT02' THEN qd.SoTienPhat ELSE 0 END) as tongTienPhat
+            COUNT(*) as totalVuViec,
+            IFNULL(SUM(lvp.MucPhat), 0) as totalMoney
         FROM VI_PHAM vp
-        LEFT JOIN QUYET_DINH_XU_PHAT qd ON vp.Ma_VuViec = qd.Ma_VuViec
-        WHERE MONTH(vp.ThoiGianViPham) = ? AND YEAR(vp.ThoiGianViPham) = ?
+        JOIN LOAI_VI_PHAM lvp ON vp.Ma_LoaiViPham = lvp.Ma_LoaiViPham
+        ${whereClause}
     `;
 
     const listSql = `
@@ -153,14 +160,47 @@ exports.getThongKe = (req, res) => {
         JOIN NGUOI_VI_PHAM nvp ON vp.Ma_NguoiViPham = nvp.Ma_NguoiViPham
         JOIN LOAI_VI_PHAM lvp ON vp.Ma_LoaiViPham = lvp.Ma_LoaiViPham
         LEFT JOIN TRANG_THAI_THANH_TOAN tttt ON vp.Ma_TrangThaiThanhToan = tttt.Ma_TrangThaiThanhToan
-        WHERE MONTH(vp.ThoiGianViPham) = ? AND YEAR(vp.ThoiGianViPham) = ?
+        ${whereClause}
+        ORDER BY vp.ThoiGianViPham DESC
     `;
 
-    db.query(statsSql, [thang, nam], (err, stats) => {
+    db.query(statsSql, params, (err, stats) => {
         if (err) return res.status(500).send(err);
-        db.query(listSql, [thang, nam], (err, list) => {
+        db.query(listSql, params, (err, list) => {
             if (err) return res.status(500).send(err);
             res.json({ stats: stats[0], list: list });
         });
+    });
+};
+
+exports.getLoaiViPham = (req, res) => {
+    const sql = `
+        SELECT lvp.*, pt.TenPhuongTien, mnd.KhoangGiaTri
+        FROM LOAI_VI_PHAM lvp
+        JOIN LOAI_PHUONG_TIEN pt ON lvp.Ma_LoaiPhuongTien = pt.Ma_LoaiPhuongTien
+        JOIN MUC_NONG_DO_CON mnd ON lvp.Ma_MucNongDoCon = mnd.Ma_MucNongDoCon
+    `;
+    db.query(sql, (err, result) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage || "Lỗi SQL" });
+        res.json(result);
+    });
+};
+
+exports.updateThanhToan = (req, res) => {
+    const { Ma_VuViec, Ma_TrangThaiThanhToan } = req.body;
+    const sql = "UPDATE VI_PHAM SET Ma_TrangThaiThanhToan = ? WHERE Ma_VuViec = ?";
+    db.query(sql, [Ma_TrangThaiThanhToan, Ma_VuViec], (err) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true, message: "Cập nhật trạng thái thành công" });
+    });
+};
+
+exports.updateLoaiViPham = (req, res) => {
+    const { id } = req.params;
+    const { MucPhat } = req.body;
+    const sql = "UPDATE LOAI_VI_PHAM SET MucPhat = ? WHERE Ma_LoaiViPham = ?";
+    db.query(sql, [MucPhat, id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true, message: "Cập nhật mức phạt thành công" });
     });
 };

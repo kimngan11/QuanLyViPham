@@ -1,33 +1,79 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FormCanBoMain | Hệ thống Quản lý Vi phạm</title>
     <link rel="stylesheet" href="css/index.css">
     <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.4s; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .group-box { border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .group-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 1.1rem; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: #fff; margin: 5% auto; padding: 30px; width: 80%; border-radius: 16px; max-height: 90vh; overflow-y: auto; }
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .group-box {
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .group-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: #fff;
+            margin: 5% auto;
+            padding: 30px;
+            width: 80%;
+            border-radius: 16px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
+
 <body>
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <div style="background: var(--primary); width: 32px; height: 32px; border-radius: 6px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">C</div>
-                <span>FORM CÁN BỘ</span>
+                <div
+                    style="background: var(--primary); width: 32px; height: 32px; border-radius: 6px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                    C</div>
+                <span>CÁN BỘ</span>
             </div>
             <nav>
-                <a href="#" class="nav-item active" onclick="showTab('nguoiViPham')">👥 Người vi phạm</a>
-                <a href="#" class="nav-item" onclick="showTab('lapBienBan')">✍️ Lập biên bản</a>
-                <a href="#" class="nav-item" onclick="showTab('traCuuQD')">📜 Tra cứu quyết định</a>
-                <a href="#" class="nav-item" onclick="showTab('thanhToan')">💳 Thanh toán</a>
-                <a href="#" class="nav-item" onclick="showTab('thongKe')">📊 Thống kê</a>
+                <a href="#" class="nav-item active" onclick="showTab('nguoiViPham')">Người vi phạm</a>
+                <a href="#" class="nav-item" onclick="showTab('lapBienBan')">Lập biên bản</a>
+                <a href="#" class="nav-item" onclick="showTab('traCuuQD')">Tra cứu quyết định</a>
+                <a href="#" class="nav-item" onclick="showTab('thanhToan')">Thanh toán</a>
+                <a href="#" class="nav-item" onclick="showTab('thongKe')">Thống kê</a>
             </nav>
             <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
                 <div style="margin-bottom: 15px; font-size: 0.85rem; color: var(--text-muted);">
@@ -44,7 +90,8 @@
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                         <div style="display: flex; gap: 10px; width: 450px;">
-                            <input type="text" id="searchNvp" class="form-control" placeholder="Tìm kiếm tên hoặc số CCCD...">
+                            <input type="text" id="searchNvp" class="form-control"
+                                placeholder="Tìm kiếm tên hoặc số CCCD...">
                             <button class="btn btn-primary" onclick="searchNvp()">Tìm kiếm</button>
                         </div>
                         <div id="pagination-info" style="color: var(--text-muted); font-size: 0.9rem;"></div>
@@ -80,33 +127,50 @@
                             <div class="form-group">
                                 <label>Số CCCD</label>
                                 <div style="display: flex; gap: 10px;">
-                                    <input type="text" id="lb_CCCD" class="form-control" placeholder="Nhập CCCD để kiểm tra...">
-                                    <button class="btn btn-outline" onclick="checkCitizen()" style="white-space: nowrap;">Kiểm tra</button>
+                                    <input type="text" id="lb_CCCD" class="form-control"
+                                        placeholder="Nhập CCCD để kiểm tra...">
+                                    <button class="btn btn-outline" onclick="checkCitizen()"
+                                        style="white-space: nowrap;">Kiểm tra</button>
                                 </div>
-                                <small id="citizenStatus" style="color: var(--primary); display: none;">✨ Đã tìm thấy thông tin trong hệ thống!</small>
+                                <small id="citizenStatus" style="color: var(--primary); display: none;">Đã tìm thấy
+                                    thông tin trong hệ thống!</small>
                             </div>
-                            <div class="form-group"><label>Họ tên</label><input type="text" id="lb_HoTen" class="form-control"></div>
+                            <div class="form-group"><label>Họ tên</label><input type="text" id="lb_HoTen"
+                                    class="form-control"></div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                <div class="form-group"><label>Ngày sinh</label><input type="date" id="lb_NgaySinh" class="form-control"></div>
-                                <div class="form-group"><label>Giới tính</label><select id="lb_GioiTinh" class="form-control"><option>Nam</option><option>Nữ</option></select></div>
+                                <div class="form-group"><label>Ngày sinh</label><input type="date" id="lb_NgaySinh"
+                                        class="form-control"></div>
+                                <div class="form-group"><label>Giới tính</label><select id="lb_GioiTinh"
+                                        class="form-control">
+                                        <option>Nam</option>
+                                        <option>Nữ</option>
+                                    </select></div>
                             </div>
-                            <div class="form-group"><label>Số điện thoại</label><input type="text" id="lb_SDT" class="form-control"></div>
-                            <div class="form-group"><label>Địa chỉ</label><input type="text" id="lb_DiaChi" class="form-control"></div>
+                            <div class="form-group"><label>Số điện thoại</label><input type="text" id="lb_SDT"
+                                    class="form-control"></div>
+                            <div class="form-group"><label>Địa chỉ</label><input type="text" id="lb_DiaChi"
+                                    class="form-control"></div>
                         </div>
                         <div class="group-box">
                             <div class="group-title">2. Chi tiết vi phạm</div>
-                            <div class="form-group"><label>Loại phương tiện</label><select id="lb_LoaiPT" class="form-control" onchange="previewFine()"></select></div>
-                            <div class="form-group"><label>Nồng độ cồn đo được (mg/L)</label><input type="number" step="0.01" id="lb_NongDo" class="form-control" oninput="previewFine()"></div>
-                            <div class="form-group" id="finePreviewBox" style="background: rgba(37, 99, 235, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary); display: none;">
-                                <label style="color: var(--primary);">💰 Mức phạt dự kiến (Nghị định 100):</label>
-                                <div id="fineAmount" style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">0đ</div>
+                            <div class="form-group"><label>Loại phương tiện</label><select id="lb_LoaiPT"
+                                    class="form-control" onchange="previewFine()"></select></div>
+                            <div class="form-group"><label>Nồng độ cồn đo được (mg/L)</label><input type="number"
+                                    step="0.01" id="lb_NongDo" class="form-control" oninput="previewFine()"></div>
+                            <div class="form-group" id="finePreviewBox"
+                                style="background: rgba(37, 99, 235, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary); display: none;">
+                                <label style="color: var(--primary);">Mức phạt dự kiến (Nghị định 100):</label>
+                                <div id="fineAmount" style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">
+                                    0đ</div>
                                 <small id="fineDesc" style="color: var(--text-muted);"></small>
                             </div>
-                            <div class="form-group"><label>Địa điểm vi phạm</label><input type="text" id="lb_DiaDiem" class="form-control" value="Chốt kiểm soát nồng độ cồn"></div>
+                            <div class="form-group"><label>Địa điểm vi phạm</label><input type="text" id="lb_DiaDiem"
+                                    class="form-control" value="Chốt kiểm soát nồng độ cồn"></div>
                             <div class="form-group">
                                 <label>Biển số xe</label>
                                 <input type="text" id="lb_BienSo" class="form-control" placeholder="Ví dụ: 59X1-123.45">
-                                <small style="color: var(--text-muted);">Định dạng: 59X1-123.45 (Xe máy) hoặc 51A-123.45 (Ô tô)</small>
+                                <small style="color: var(--text-muted);">Định dạng: 59X1-123.45 (Xe máy) hoặc 51A-123.45
+                                    (Ô tô)</small>
                             </div>
                         </div>
                     </div>
@@ -117,25 +181,25 @@
                 </div>
             </div>
 
-            <!-- TAB: TRA CỨU QUYẾT ĐỊNH (4.3.3) -->
+            <!-- TAB: QUYẾT ĐỊNH XỬ PHẠT (3.8.3.c) -->
             <div id="tab-traCuuQD" class="tab-content">
-                <h1 style="margin-bottom: 25px;">Tra cứu quyết định xử phạt</h1>
+                <h1 style="margin-bottom: 25px;">Ra quyết định & In quyết định xử phạt</h1>
                 <div class="card">
                     <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                        <input type="text" id="searchQdKeyword" class="form-control" placeholder="Nhập Mã QĐ, CCCD hoặc Biển số...">
+                        <input type="text" id="searchQdKeyword" class="form-control"
+                            placeholder="Mã QĐ, CCCD hoặc Biển số...">
                         <button class="btn btn-primary" onclick="loadQuyetDinh()">Tìm kiếm</button>
                     </div>
                     <div class="table-container">
                         <table id="qdTable">
                             <thead>
                                 <tr>
-                                    <th>Mã QĐ</th>
-                                    <th>Họ tên</th>
-                                    <th>CCCD</th>
-                                    <th>Biển số</th>
+                                    <th>Số QĐ</th>
+                                    <th>Mã vụ việc</th>
+                                    <th>Người vi phạm</th>
                                     <th>Số tiền phạt</th>
+                                    <th>Ngày ra QĐ</th>
                                     <th>Trạng thái</th>
-                                    <th>Ngày thanh toán</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
@@ -172,13 +236,15 @@
             <!-- TAB: THỐNG KÊ (PHÂN TÍCH VI PHẠM) -->
             <div id="tab-thongKe" class="tab-content">
                 <h1 style="margin-bottom: 25px;">Báo cáo phân tích vi phạm</h1>
-                
+
                 <div class="stats-grid">
                     <div class="card stat-card">
                         <p>Hiệu suất xử phạt</p>
                         <div class="value" id="tk_hieuSuat">0%</div>
                         <div style="width: 100%; background: #eee; height: 8px; border-radius: 4px; margin-top: 10px;">
-                            <div id="tk_hieuSuatBar" style="width: 0%; background: var(--success); height: 100%; border-radius: 4px; transition: width 1s;"></div>
+                            <div id="tk_hieuSuatBar"
+                                style="width: 0%; background: var(--success); height: 100%; border-radius: 4px; transition: width 1s;">
+                            </div>
                         </div>
                     </div>
                     <div class="card stat-card">
@@ -193,12 +259,22 @@
                         <h2 style="font-size: 1.1rem; margin-bottom: 20px;">Cơ cấu phương tiện vi phạm</h2>
                         <div id="tk_phuongTienBody">
                             <div style="margin-bottom: 15px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Xe máy</span><span id="tk_xeMayVal">0%</span></div>
-                                <div style="width: 100%; background: #eee; height: 6px; border-radius: 3px;"><div id="tk_xeMayBar" style="width: 0%; background: var(--primary); height: 100%; border-radius: 3px;"></div></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Xe
+                                        máy</span><span id="tk_xeMayVal">0%</span></div>
+                                <div style="width: 100%; background: #eee; height: 6px; border-radius: 3px;">
+                                    <div id="tk_xeMayBar"
+                                        style="width: 0%; background: var(--primary); height: 100%; border-radius: 3px;">
+                                    </div>
+                                </div>
                             </div>
                             <div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Ô tô</span><span id="tk_otoVal">0%</span></div>
-                                <div style="width: 100%; background: #eee; height: 6px; border-radius: 3px;"><div id="tk_otoBar" style="width: 0%; background: var(--secondary); height: 100%; border-radius: 3px;"></div></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Ô
+                                        tô</span><span id="tk_otoVal">0%</span></div>
+                                <div style="width: 100%; background: #eee; height: 6px; border-radius: 3px;">
+                                    <div id="tk_otoBar"
+                                        style="width: 0%; background: var(--secondary); height: 100%; border-radius: 3px;">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -218,15 +294,20 @@
 
     <!-- MODAL: CHI TIẾT NGƯỜI VI PHẠM (4.3.2) -->
     <div id="nvpModal" class="modal">
-        <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h2>Thông tin chi tiết người vi phạm</h2>
+        <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto; padding: 0;">
+            <!-- Header cố định -->
+            <div
+                style="position: sticky; top: 0; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 25px 35px; border-bottom: 1px solid var(--border); z-index: 10;">
+                <h2 style="margin: 0;">Thông tin chi tiết người vi phạm</h2>
                 <button class="btn btn-outline" onclick="closeModal()">Đóng</button>
             </div>
-            <div id="nvpDetailsContent"></div>
+            <!-- Nội dung cuộn -->
+            <div id="nvpDetailsContent" style="padding: 35px;"></div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="js/officer.js"></script>
 </body>
+
 </html>
