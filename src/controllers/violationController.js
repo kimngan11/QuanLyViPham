@@ -109,11 +109,19 @@ exports.getNguoiViPhamDetails = (req, res) => {
 // ===========================
 exports.getAllQuyetDinh = (req, res) => {
     const sql = `
-        SELECT qd.*, vp.BienSoXe, nvp.HoTen AS TenNguoiViPham, nvp.CanCuocCongDan, tttt.TenTrangThai
-        FROM QUYET_DINH_XU_PHAT qd
-        JOIN VI_PHAM vp ON qd.Ma_VuViec = vp.Ma_VuViec
+        SELECT 
+            vp.Ma_VuViec, vp.BienSoXe, vp.ThoiGianViPham, vp.DiaDiem, vp.NongDoCon, vp.Ma_LoaiPhuongTien,
+            nvp.HoTen AS TenNguoiViPham, nvp.CanCuocCongDan,
+            lvp.TenLoaiViPham, lvp.MucPhat,
+            qd.Ma_QuyetDinh, qd.NgayNopPhat, qd.SoTienPhat,
+            IFNULL(tttt.TenTrangThai, 'Chưa có quyết định') as TenTrangThai,
+            IFNULL(qd.Ma_TrangThaiThanhToan, 'TTTT01') as Ma_TrangThaiThanhToan
+        FROM VI_PHAM vp
         JOIN NGUOI_VI_PHAM nvp ON vp.Ma_NguoiViPham = nvp.Ma_NguoiViPham
-        JOIN TRANG_THAI_THANH_TOAN tttt ON qd.Ma_TrangThaiThanhToan = tttt.Ma_TrangThaiThanhToan
+        JOIN LOAI_VI_PHAM lvp ON vp.Ma_LoaiViPham = lvp.Ma_LoaiViPham
+        LEFT JOIN QUYET_DINH_XU_PHAT qd ON vp.Ma_VuViec = qd.Ma_VuViec
+        LEFT JOIN TRANG_THAI_THANH_TOAN tttt ON qd.Ma_TrangThaiThanhToan = tttt.Ma_TrangThaiThanhToan
+        ORDER BY vp.ThoiGianViPham DESC
     `;
     db.query(sql, (err, result) => {
         if (err) return res.status(500).send(err);
@@ -125,14 +133,7 @@ exports.getAllQuyetDinh = (req, res) => {
 // THÔNG KÊ & THANH TOÁN
 // ===========================
 
-exports.updateThanhToan = (req, res) => {
-    const { Ma_QuyetDinh, NgayNopPhat } = req.body;
-    const sql = "UPDATE QUYET_DINH_XU_PHAT SET Ma_TrangThaiThanhToan = 'TTTT02', NgayNopPhat = ? WHERE Ma_QuyetDinh = ?";
-    db.query(sql, [NgayNopPhat || new Date(), Ma_QuyetDinh], (err) => {
-        if (err) return res.status(500).send(err);
-        res.json({ success: true, message: "Cập nhật thanh toán thành công" });
-    });
-};
+// Payment function moved to bottom for better organization
 
 exports.getThongKe = (req, res) => {
     const { month, year } = req.query;
@@ -187,11 +188,16 @@ exports.getLoaiViPham = (req, res) => {
 };
 
 exports.updateThanhToan = (req, res) => {
-    const { Ma_VuViec, Ma_TrangThaiThanhToan } = req.body;
-    const sql = "UPDATE VI_PHAM SET Ma_TrangThaiThanhToan = ? WHERE Ma_VuViec = ?";
-    db.query(sql, [Ma_TrangThaiThanhToan, Ma_VuViec], (err) => {
-        if (err) return res.status(500).send(err);
-        res.json({ success: true, message: "Cập nhật trạng thái thành công" });
+    const { Ma_QuyetDinh, NgayNopPhat } = req.body;
+    const sql = "UPDATE QUYET_DINH_XU_PHAT SET Ma_TrangThaiThanhToan = 'TTTT02', NgayNopPhat = ? WHERE Ma_QuyetDinh = ?";
+    db.query(sql, [NgayNopPhat || new Date(), Ma_QuyetDinh], (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: "Lỗi SQL: " + err.message });
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy Mã quyết định #" + Ma_QuyetDinh });
+        }
+        
+        res.json({ success: true, message: "Cập nhật thanh toán thành công" });
     });
 };
 
@@ -202,5 +208,32 @@ exports.updateLoaiViPham = (req, res) => {
     db.query(sql, [MucPhat, id], (err) => {
         if (err) return res.status(500).send(err);
         res.json({ success: true, message: "Cập nhật mức phạt thành công" });
+    });
+};
+
+exports.createQuyetDinh = (req, res) => {
+    const { NgayRaQuyetDinh, SoTienPhat, Ma_VuViec, Ma_TrangThaiThanhToan } = req.body;
+    const sql = `INSERT INTO QUYET_DINH_XU_PHAT 
+                 (NgayRaQuyetDinh, SoTienPhat, Ma_VuViec, Ma_TrangThaiThanhToan) 
+                 VALUES (?, ?, ?, ?)`;
+    db.query(sql, [NgayRaQuyetDinh, SoTienPhat, Ma_VuViec, Ma_TrangThaiThanhToan], (err) => {
+        if (err) {
+            console.error("Database Insert Error:", err);
+            return res.status(500).send(err);
+        }
+        res.json({ success: true, message: "Ra quyết định thành công" });
+    });
+};
+
+exports.updateViolation = (req, res) => {
+    const { id } = req.params;
+    const { NongDoCon, DiaDiem, BienSoXe, Ma_LoaiViPham, Ma_MucNongDoCon } = req.body;
+    const sql = `UPDATE VI_PHAM SET 
+                 NongDoCon = ?, DiaDiem = ?, BienSoXe = ?, 
+                 Ma_LoaiViPham = ?, Ma_MucNongDoCon = ? 
+                 WHERE Ma_VuViec = ?`;
+    db.query(sql, [NongDoCon, DiaDiem, BienSoXe, Ma_LoaiViPham, Ma_MucNongDoCon, id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true, message: "Cập nhật biên bản thành công" });
     });
 };

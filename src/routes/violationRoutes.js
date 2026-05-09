@@ -13,9 +13,11 @@ router.post("/ra-quyet-dinh", violationController.raQuyetDinh);
 router.get("/nguoi-vi-pham", violationController.getAllNguoiViPham);
 router.get("/nguoi-vi-pham/:id", violationController.getNguoiViPhamDetails);
 router.get("/quyet-dinh", violationController.getAllQuyetDinh);
+router.post("/quyet-dinh", violationController.createQuyetDinh);
 router.get("/loai-vi-pham", violationController.getLoaiViPham);
 router.put("/loai-vi-pham/:id", violationController.updateLoaiViPham);
 router.get("/thong-ke", violationController.getThongKe);
 router.put("/thanh-toan", violationController.updateThanhToan);
+router.put("/vi-pham/:id", violationController.updateViolation);
 
 module.exports = router;

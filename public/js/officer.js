@@ -83,18 +83,35 @@ function renderNvpTable(page) {
     document.getElementById('pagination-controls').innerHTML = controls;
 }
 
+function handleApiError(err) {
+    let msg = "Đã có lỗi xảy ra!";
+    if (err.sqlMessage) {
+        if (err.sqlMessage.includes("uq_nvp_cccd")) msg = "Số CCCD này đã tồn tại với tên người vi phạm khác!";
+        else msg = "Lỗi dữ liệu: " + err.sqlMessage;
+    } else {
+        msg = err.message || msg;
+    }
+    alert("⚠️ " + msg);
+}
+
 // 4.3.4: Lập biên bản - SUBMIT & VALIDATION
 async function submitForm() {
     const hoTen = document.getElementById('lb_HoTen').value;
     const cccd = document.getElementById('lb_CCCD').value;
+    const sdt = document.getElementById('lb_SDT').value;
     const nongDo = parseFloat(document.getElementById('lb_NongDo').value);
     const loaiPT = document.getElementById('lb_LoaiPT').value;
     const bienSo = document.getElementById('lb_BienSo').value;
+    const ngaySinh = document.getElementById('lb_NgaySinh').value;
+    const diaChi = document.getElementById('lb_DiaChi').value;
 
-    if (!hoTen || !cccd || isNaN(nongDo) || !bienSo) {
-        alert("Vui lòng nhập đầy đủ các thông tin bắt buộc!");
-        return;
-    }
+    if (!hoTen) return alert("⚠️ Vui lòng nhập Họ tên người vi phạm!");
+    if (!cccd || cccd.length !== 12) return alert("⚠️ Số CCCD phải nhập chính xác 12 chữ số!");
+    if (!sdt || !/^(0[0-9]{9})$/.test(sdt)) return alert("⚠️ Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng số 0)!");
+    if (isNaN(nongDo) || nongDo < 0) return alert("⚠️ Nồng độ cồn không hợp lệ!");
+    if (!bienSo) return alert("⚠️ Vui lòng nhập Biển số xe!");
+    if (!ngaySinh) return alert("⚠️ Vui lòng nhập Ngày sinh!");
+    if (!diaChi) return alert("⚠️ Vui lòng nhập Địa chỉ!");
 
     let maLVP = (loaiPT === 'LPT01') ? (nongDo <= 0.25 ? 'LVP01' : (nongDo <= 0.4 ? 'LVP02' : 'LVP03')) : (nongDo <= 0.25 ? 'LVP04' : (nongDo <= 0.4 ? 'LVP05' : 'LVP06'));
 
@@ -102,10 +119,10 @@ async function submitForm() {
         nguoiViPham: {
             Ma_NguoiViPham: 'NVP' + Date.now().toString().slice(-7),
             HoTen: hoTen,
-            SoDienThoai: document.getElementById('lb_SDT').value,
+            SoDienThoai: sdt,
             CanCuocCongDan: cccd,
-            NgaySinh: document.getElementById('lb_NgaySinh').value || '1990-01-01',
-            DiaChi: document.getElementById('lb_DiaChi').value,
+            NgaySinh: ngaySinh,
+            DiaChi: diaChi,
             GioiTinh: document.getElementById('lb_GioiTinh').value
         },
         viPham: {
@@ -128,68 +145,141 @@ async function submitForm() {
             body: JSON.stringify(data)
         });
         const result = await res.json();
-        if (res.ok && result.success) {
+        if (res.ok) {
             alert('Lưu biên bản thành công!');
             resetForm();
             showTab('nguoiViPham');
         } else {
-            alert('Lỗi: ' + (result.message || 'Không thể lưu biên bản'));
+            handleApiError(result);
         }
     } catch (e) { alert('Lỗi kết nối hoặc dữ liệu không hợp lệ!'); }
 }
 
-// 4.3.3 & 3.8.3.c: Ra quyết định & Thanh toán
 async function loadQuyetDinh() {
-    const kw = document.getElementById('searchQdKeyword')?.value.toLowerCase() || "";
+    const kwQD = document.getElementById('searchQdKeyword')?.value.toLowerCase().trim() || "";
+    const kwTT = document.getElementById('searchPaymentKeyword')?.value.toLowerCase().trim() || "";
+
     try {
         const res = await fetch('/vipham/quyet-dinh');
-        let data = await res.json();
+        let allData = await res.json();
 
-        if (kw) {
-            data = data.filter(q =>
-                q.Ma_QuyetDinh.toString().includes(kw) ||
-                q.CanCuocCongDan.includes(kw) ||
-                q.BienSoXe.toLowerCase().includes(kw)
+        // 1. Table Ra Quyết định
+        let dataQD = allData;
+        if (kwQD) {
+            dataQD = dataQD.filter(q =>
+                (q.Ma_QuyetDinh && q.Ma_QuyetDinh.toString().includes(kwQD)) ||
+                (q.CanCuocCongDan && q.CanCuocCongDan.includes(kwQD)) ||
+                (q.BienSoXe && q.BienSoXe.toLowerCase().includes(kwQD)) ||
+                (q.Ma_VuViec && q.Ma_VuViec.toLowerCase().includes(kwQD))
             );
         }
 
         const qdTbody = document.querySelector('#qdTable tbody');
         if (qdTbody) {
             qdTbody.innerHTML = '';
-            data.forEach(q => {
+            dataQD.forEach(q => {
+                const hasQD = !!q.Ma_QuyetDinh;
+                const displayFine = hasQD ? q.SoTienPhat : q.MucPhat;
                 qdTbody.innerHTML += `
                     <tr>
-                        <td><b>${q.Ma_QuyetDinh}</b></td>
-                        <td>${q.Ma_VuViec}</td>
+                        <td><b>${q.Ma_VuViec}</b></td>
                         <td>${q.TenNguoiViPham}</td>
-                        <td><b style="color:var(--danger)">${new Intl.NumberFormat('vi-VN').format(q.SoTienPhat)}đ</b></td>
-                        <td>${new Date(q.NgayRaQuyetDinh).toLocaleDateString('vi-VN')}</td>
-                        <td><span class="badge ${q.Ma_TrangThaiThanhToan === 'TTTT02' ? 'badge-success' : 'badge-warning'}">${q.TenTrangThai}</span></td>
+                        <td>${q.BienSoXe}</td>
+                        <td><b style="color:var(--danger)">${new Intl.NumberFormat('vi-VN').format(displayFine)}đ</b></td>
+                        <td>${q.Ma_QuyetDinh || '---'}</td>
+                        <td><span class="badge ${hasQD ? 'badge-success' : 'badge-warning'}">${q.TenTrangThai}</span></td>
                         <td>
-                            <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;" onclick="printDecision('${q.Ma_QuyetDinh}')">🖨️ In QĐ</button>
+                            <div style="display: flex; gap: 5px;">
+                                ${hasQD
+                        ? `<button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;" onclick="printDecision(${q.Ma_QuyetDinh})">In QĐ</button>`
+                        : `
+                                        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem; border-color: #f59e0b; color: #d97706;" 
+                                            onclick='openEditViolation(${JSON.stringify(q)})'>Sửa</button>
+                                        <button class="btn btn-primary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="issueDecision('${q.Ma_VuViec}', ${q.MucPhat})">⚖️ Ra QĐ</button>
+                                      `
+                    }
+                            </div>
                         </td>
-                    </tr>`;
+                    </tr>
+                `;
             });
+        }
+
+        // 2. Table Thanh toán
+        const statusFilter = document.getElementById('filterPaymentStatus')?.value || "all";
+        let dataTT = allData.filter(q => q.Ma_QuyetDinh);
+
+        if (statusFilter !== "all") {
+            dataTT = dataTT.filter(q => q.Ma_TrangThaiThanhToan === statusFilter);
+        }
+
+        if (kwTT) {
+            dataTT = dataTT.filter(q =>
+                (q.Ma_QuyetDinh && q.Ma_QuyetDinh.toString().includes(kwTT)) ||
+                (q.TenNguoiViPham && q.TenNguoiViPham.toLowerCase().includes(kwTT)) ||
+                (q.CanCuocCongDan && q.CanCuocCongDan.includes(kwTT))
+            );
         }
 
         const ttTbody = document.querySelector('#thanhToanTable tbody');
         if (ttTbody) {
             ttTbody.innerHTML = '';
-            data.forEach(q => {
-                ttTbody.innerHTML += `<tr><td>${q.Ma_QuyetDinh}</td><td>${q.Ma_VuViec}</td><td>${q.TenNguoiViPham}</td><td>Vi phạm nồng độ cồn</td><td>${new Intl.NumberFormat('vi-VN').format(q.SoTienPhat)}đ</td><td>${q.NgayNopPhat ? new Date(q.NgayNopPhat).toLocaleDateString('vi-VN') : '---'}</td><td><span class="badge ${q.Ma_TrangThaiThanhToan === 'TTTT02' ? 'badge-success' : 'badge-warning'}">${q.TenTrangThai}</span></td><td>${q.Ma_TrangThaiThanhToan !== 'TTTT02' ? `<button class="btn btn-primary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="updatePayment('${q.Ma_QuyetDinh}')">Xác nhận</button>` : '---'}</td></tr>`;
+            dataTT.forEach(q => {
+                ttTbody.innerHTML += `
+                    <tr>
+                        <td><b>${q.Ma_QuyetDinh}</b></td>
+                        <td>${q.Ma_VuViec}</td>
+                        <td>${q.TenNguoiViPham}</td>
+                        <td>Vi phạm nồng độ cồn</td>
+                        <td><b style="color:var(--success)">${new Intl.NumberFormat('vi-VN').format(q.SoTienPhat)}đ</b></td>
+                        <td>${new Date(q.ThoiGianViPham).toLocaleDateString('vi-VN')}</td>
+                        <td><span class="badge ${q.Ma_TrangThaiThanhToan === 'TTTT02' ? 'badge-success' :
+                        (q.Ma_TrangThaiThanhToan === 'TTTT03' ? 'badge-danger' : 'badge-warning')
+                    }">${q.TenTrangThai}</span></td>
+                        <td>
+                            ${q.Ma_TrangThaiThanhToan !== 'TTTT02'
+                        ? `<button class="btn btn-primary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="updatePayment(${q.Ma_QuyetDinh})">Xác nhận</button>`
+                        : '<span style="color:var(--success)">Xong</span>'}
+                        </td>
+                    </tr>
+                `;
             });
+        }
+    } catch (e) { console.error("Load Decision Error:", e); }
+}
+
+async function issueDecision(maVuViec, mucPhat) {
+    if (!confirm("Bạn có chắc chắn muốn Ra quyết định xử phạt cho vụ việc này?")) return;
+
+    const data = {
+        NgayRaQuyetDinh: new Date().toISOString().slice(0, 10),
+        SoTienPhat: mucPhat,
+        Ma_VuViec: maVuViec,
+        Ma_TrangThaiThanhToan: 'TTTT01'
+    };
+
+    try {
+        const res = await fetch('/vipham/quyet-dinh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            alert("✅ Đã ra quyết định xử phạt thành công!");
+            loadQuyetDinh();
+        } else {
+            alert("❌ Lỗi khi ra quyết định!");
         }
     } catch (e) { console.error(e); }
 }
 
 async function printDecision(id) {
-    // Fetch data for the PDF
     const res = await fetch('/vipham/quyet-dinh');
     const allData = await res.json();
-    const q = allData.find(item => item.Ma_QuyetDinh.toString() === id);
+    const q = allData.find(item => item.Ma_QuyetDinh == id);
     if (!q) return alert("Không tìm thấy dữ liệu!");
 
-    // Create a temporary element for PDF content
     const element = document.createElement('div');
     element.style.padding = '40px';
     element.style.fontFamily = 'Arial, sans-serif';
@@ -217,7 +307,7 @@ async function printDecision(id) {
             <p>2. Số CCCD: ${q.CanCuocCongDan}</p>
             <p>3. Hành vi vi phạm: <b>Điều khiển phương tiện khi nồng độ cồn vượt mức quy định</b></p>
             <p>4. Nồng độ cồn đo được: ${q.NongDoCon} mg/L khí thở</p>
-            <p>5. Loại phương tiện: ${q.BienSoXe}</p>
+            <p>5. Biển số xe: ${q.BienSoXe}</p>
             <p>6. Hình thức xử phạt: Phạt tiền</p>
             <p>7. Số tiền phạt: <b style="font-size: 18px; color: #d32f2f;">${new Intl.NumberFormat('vi-VN').format(q.SoTienPhat)} VNĐ</b></p>
         </div>
@@ -230,7 +320,6 @@ async function printDecision(id) {
         </div>
     `;
 
-    // html2pdf options
     const opt = {
         margin: 10,
         filename: `QuyetDinh_${q.Ma_QuyetDinh}.pdf`,
@@ -239,33 +328,55 @@ async function printDecision(id) {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // Run export
     html2pdf().set(opt).from(element).save();
 }
 
 async function updatePayment(id) {
-    if (!confirm('Xác nhận người dân đã nộp phạt?')) return;
+    if (!confirm('Xác nhận người dân đã nộp phạt cho Quyết định #' + id + '?')) return;
     try {
-        await fetch('/vipham/thanh-toan', {
+        const res = await fetch('/vipham/thanh-toan', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Ma_QuyetDinh: id, NgayNopPhat: new Date().toISOString().split('T')[0] })
+            body: JSON.stringify({
+                Ma_QuyetDinh: id,
+                NgayNopPhat: new Date().toISOString().split('T')[0]
+            })
         });
-        loadQuyetDinh();
-    } catch (e) { alert("Lỗi khi cập nhật thanh toán!"); }
+
+        if (res.ok) {
+            alert("Xác nhận thanh toán thành công!");
+            loadQuyetDinh();
+        } else {
+            const err = await res.json();
+            alert("Lỗi: " + (err.message || "Không thể cập nhật thanh toán"));
+        }
+    } catch (e) {
+        console.error("Payment Update Error:", e);
+        alert("Lỗi kết nối hệ thống!");
+    }
 }
 
-// 4.3.6: Thống kê Dashboard (Phân tích)
 async function loadThongKe() {
     try {
         const res = await fetch('/vipham');
-        const data = await res.json();
-        const total = data.length;
-        if (total === 0) return;
+        const allData = await res.json();
 
-        const processed = data.filter(v => v.TenTrangThai === 'Đã thanh toán').length;
-        const totalRevenue = data.reduce((sum, v) => sum + (v.TenTrangThai === 'Đã thanh toán' ? (v.MucPhat || 0) : 0), 0);
+        // Filter by current officer
+        const myId = localStorage.getItem('maCanBo');
+        const data = allData.filter(v => v.Ma_CanBo === myId);
+
+        const total = data.length;
+        if (total === 0) {
+            document.getElementById('tk_tongTien').innerText = '0đ';
+            document.getElementById('tk_soVu').innerText = 'Chưa có vụ việc nào';
+            document.getElementById('tk_hieuSuat').innerText = '0%';
+            return;
+        }
+
+        const processed = data.filter(v => v.Ma_TrangThaiThanhToan === 'TTTT02').length;
+        const totalRevenue = data.reduce((sum, v) => sum + Number(v.MucPhat || 0), 0);
         const xeMayCount = data.filter(v => v.Ma_LoaiPhuongTien === 'LPT01').length;
+        const otoCount = total - xeMayCount;
 
         const perf = Math.round((processed / total) * 100);
         const xeMayPct = Math.round((xeMayCount / total) * 100);
@@ -279,21 +390,39 @@ async function loadThongKe() {
         document.getElementById('tk_xeMayBar').style.width = xeMayPct + '%';
         document.getElementById('tk_otoVal').innerText = otoPct + '%';
         document.getElementById('tk_otoBar').style.width = otoPct + '%';
+
+        // 3. Populate Detail Table
+        const tbody = document.querySelector('#tk_detailTable tbody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            data.forEach(v => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${v.Ma_VuViec}</b></td>
+                        <td>${new Date(v.ThoiGianViPham).toLocaleDateString('vi-VN')}</td>
+                        <td>${v.TenNguoiViPham}</td>
+                        <td>${v.BienSoXe}</td>
+                        <td><b style="color:var(--danger)">${new Intl.NumberFormat('vi-VN').format(v.MucPhat)}đ</b></td>
+                        <td><span class="badge ${v.Ma_TrangThaiThanhToan === 'TTTT02' ? 'badge-success' : 'badge-warning'}">${v.TenTrangThai}</span></td>
+                    </tr>
+                `;
+            });
+        }
     } catch (e) { console.error("Stats analysis error:", e); }
 }
 
-// Detail View
 async function viewNvpDetails(id) {
-    const res = await fetch(`/vipham/nguoi-vi-pham/${id}`);
-    const data = await res.json();
-    const content = document.getElementById('nvpDetailsContent');
+    try {
+        const res = await fetch(`/vipham/nguoi-vi-pham/${id}`);
+        const data = await res.json();
+        const content = document.getElementById('nvpDetailsContent');
 
-    const birthDate = new Date(data.personal.NgaySinh);
-    const age = new Date().getFullYear() - birthDate.getFullYear();
-    const violationCount = data.history.length;
-    const totalFines = data.history.reduce((sum, h) => sum + Number(h.MucPhat || 0), 0);
+        const birthDate = new Date(data.personal.NgaySinh);
+        const age = new Date().getFullYear() - birthDate.getFullYear();
+        const violationCount = data.history.length;
+        const totalFines = data.history.reduce((sum, h) => sum + Number(h.MucPhat || 0), 0);
 
-    content.innerHTML = `
+        content.innerHTML = `
         <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: start;">
             <div style="width: 140px; height: 170px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; border: 2px solid var(--border); color: var(--text-muted);">👤</div>
             <div style="flex: 1;">
@@ -319,7 +448,7 @@ async function viewNvpDetails(id) {
             </div>
         </div>
         <div class="group-box">
-            <div class="group-title">📜 Lịch sử vi phạm</div>
+            <div class="group-title">Lịch sử vi phạm</div>
             <table class="table">
                 <thead><tr><th>Mã vụ</th><th>Thời gian</th><th>Lỗi</th><th>Tiền phạt</th><th>Trạng thái</th></tr></thead>
                 <tbody>
@@ -328,11 +457,15 @@ async function viewNvpDetails(id) {
             </table>
         </div>
     `;
-    document.getElementById('nvpModal').style.display = 'block';
+        document.getElementById('nvpModal').style.display = 'block';
+    } catch (e) { console.error(e); }
 }
 
 function closeModal() { document.getElementById('nvpModal').style.display = 'none'; }
-function resetForm() { document.querySelectorAll('.tab-content input').forEach(i => i.value = ''); document.getElementById('finePreviewBox').style.display = 'none'; }
+function resetForm() {
+    document.querySelectorAll('.tab-content input').forEach(i => i.value = '');
+    document.getElementById('finePreviewBox').style.display = 'none';
+}
 
 // Auto-fill & Preview
 async function checkCitizen() {
@@ -371,4 +504,85 @@ function previewFine() {
     document.getElementById('fineDesc').innerText = desc;
 }
 
-document.addEventListener('DOMContentLoaded', () => loadNguoiViPham());
+
+// 4.3.7: Sửa biên bản vi phạm
+let currentEditingVehicleType = "";
+
+function openEditViolation(q) {
+    document.getElementById('edit_MaVuViec').value = q.Ma_VuViec;
+    document.getElementById('edit_HoTen').value = q.TenNguoiViPham;
+    document.getElementById('edit_NongDo').value = q.NongDoCon;
+    document.getElementById('edit_DiaDiem').value = q.DiaDiem;
+    document.getElementById('edit_BienSo').value = q.BienSoXe;
+    currentEditingVehicleType = q.Ma_LoaiPhuongTien;
+
+    previewEditFine();
+    document.getElementById('editViolationModal').style.display = 'block';
+}
+
+function previewEditFine() {
+    const nongDo = parseFloat(document.getElementById('edit_NongDo').value);
+    if (isNaN(nongDo) || nongDo < 0) {
+        document.getElementById('edit_FineAmount').innerText = "0đ";
+        return;
+    }
+
+    let amount = 0;
+    if (currentEditingVehicleType === 'LPT01') { // Xe máy
+        if (nongDo <= 0.25) amount = 2000000;
+        else if (nongDo <= 0.4) amount = 4000000;
+        else amount = 8000000;
+    } else { // Ô tô
+        if (nongDo <= 0.25) amount = 7000000;
+        else if (nongDo <= 0.4) amount = 17000000;
+        else amount = 35000000;
+    }
+    document.getElementById('edit_FineAmount').innerText = new Intl.NumberFormat('vi-VN').format(amount) + "đ";
+}
+
+async function saveEditViolation() {
+    const maVuViec = document.getElementById('edit_MaVuViec').value;
+    const nongDo = parseFloat(document.getElementById('edit_NongDo').value);
+    const diaDiem = document.getElementById('edit_DiaDiem').value;
+    const bienSo = document.getElementById('edit_BienSo').value;
+
+    if (isNaN(nongDo) || nongDo < 0) return alert("Nồng độ cồn không hợp lệ!");
+    if (!diaDiem) return alert("Vui lòng nhập địa điểm!");
+    if (!bienSo) return alert("Vui lòng nhập biển số xe!");
+
+    // Calculate new categories
+    let maLVP = (currentEditingVehicleType === 'LPT01')
+        ? (nongDo <= 0.25 ? 'LVP01' : (nongDo <= 0.4 ? 'LVP02' : 'LVP03'))
+        : (nongDo <= 0.25 ? 'LVP04' : (nongDo <= 0.4 ? 'LVP05' : 'LVP06'));
+
+    let maMNDC = (nongDo <= 0.25 ? 'MNDC01' : (nongDo <= 0.4 ? 'MNDC02' : 'MNDC03'));
+
+    const data = {
+        NongDoCon: nongDo,
+        DiaDiem: diaDiem,
+        BienSoXe: bienSo,
+        Ma_LoaiViPham: maLVP,
+        Ma_MucNongDoCon: maMNDC
+    };
+
+    try {
+        const res = await fetch(`/vipham/vi-pham/${maVuViec}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            alert("Cập nhật biên bản thành công!");
+            document.getElementById('editViolationModal').style.display = 'none';
+            loadQuyetDinh();
+        } else {
+            alert("Lỗi khi cập nhật!");
+        }
+    } catch (e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadNguoiViPham();
+    loadThongKe();
+});

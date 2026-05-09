@@ -194,11 +194,11 @@
                         <table id="qdTable">
                             <thead>
                                 <tr>
-                                    <th>Số QĐ</th>
                                     <th>Mã vụ việc</th>
                                     <th>Người vi phạm</th>
+                                    <th>Biển số xe</th>
                                     <th>Số tiền phạt</th>
-                                    <th>Ngày ra QĐ</th>
+                                    <th>Mã Quyết định</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -213,6 +213,17 @@
             <div id="tab-thanhToan" class="tab-content">
                 <h1 style="margin-bottom: 25px;">Quản lý thanh toán</h1>
                 <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                        <input type="text" id="searchPaymentKeyword" class="form-control"
+                            placeholder="Mã QĐ, CCCD hoặc Tên...">
+                        <select id="filterPaymentStatus" class="form-control" style="max-width: 200px;" onchange="loadQuyetDinh()">
+                            <option value="all">-- Trạng thái --</option>
+                            <option value="TTTT01">Chưa thanh toán</option>
+                            <option value="TTTT02">Đã thanh toán</option>
+                            <option value="TTTT03">Quá hạn</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadQuyetDinh()">Tìm kiếm</button>
+                    </div>
                     <div class="table-container">
                         <table id="thanhToanTable">
                             <thead>
@@ -288,6 +299,25 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="card" style="margin-top: 30px;">
+                    <h2 style="font-size: 1.1rem; margin-bottom: 20px;">Danh sách vi phạm đã lập</h2>
+                    <div class="table-container">
+                        <table id="tk_detailTable">
+                            <thead>
+                                <tr>
+                                    <th>Mã vụ</th>
+                                    <th>Thời gian</th>
+                                    <th>Người vi phạm</th>
+                                    <th>Biển số</th>
+                                    <th>Tiền phạt</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -306,7 +336,40 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- MODAL: SỬA BIÊN BẢN VI PHẠM -->
+    <div id="editViolationModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2>Sửa thông tin vi phạm</h2>
+                <button class="btn btn-outline" onclick="document.getElementById('editViolationModal').style.display='none'">Đóng</button>
+            </div>
+            <form id="editViolationForm">
+                <input type="hidden" id="edit_MaVuViec">
+                <div class="form-group">
+                    <label>Người vi phạm</label>
+                    <input type="text" id="edit_HoTen" class="form-control" readonly style="background: #f1f5f9;">
+                </div>
+                <div class="form-group">
+                    <label>Nồng độ cồn (mg/L)</label>
+                    <input type="number" id="edit_NongDo" class="form-control" step="0.01" oninput="previewEditFine()">
+                </div>
+                <div class="form-group">
+                    <label>Địa điểm</label>
+                    <input type="text" id="edit_DiaDiem" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Biển số xe</label>
+                    <input type="text" id="edit_BienSo" class="form-control">
+                </div>
+                <div id="edit_FinePreview" style="padding: 15px; background: #fffbeb; border-radius: 8px; margin-bottom: 15px; border: 1px solid #fef3c7;">
+                    <p style="font-size: 0.85rem; color: #92400e;">Mức phạt dự kiến: <b id="edit_FineAmount" style="font-size: 1.1rem;">0đ</b></p>
+                </div>
+                <button type="button" class="btn btn-primary" style="width: 100%;" onclick="saveEditViolation()">CẬP NHẬT BIÊN BẢN</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="js/officer.js"></script>
 </body>
 
