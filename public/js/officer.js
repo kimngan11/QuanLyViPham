@@ -496,7 +496,7 @@ function previewFine() {
         else { amount = 8000000; desc = "Mức 3: > 0.4 mg/L"; }
     } else {
         if (nongDo <= 0.25) { amount = 7000000; desc = "Mức 1: ≤ 0.25 mg/L"; }
-        else if (nongDo <= 0.4) { amount = 17000000; desc = "Mức 2: > 0.25 - 0.4 mg/L"; }
+        else if (nongDo <= 0.4) { amount = 16000000; desc = "Mức 2: > 0.25 - 0.4 mg/L"; }
         else { amount = 35000000; desc = "Mức 3: > 0.4 mg/L"; }
     }
     document.getElementById('finePreviewBox').style.display = 'block';
@@ -534,7 +534,7 @@ function previewEditFine() {
         else amount = 8000000;
     } else { // Ô tô
         if (nongDo <= 0.25) amount = 7000000;
-        else if (nongDo <= 0.4) amount = 17000000;
+        else if (nongDo <= 0.4) amount = 16000000;
         else amount = 35000000;
     }
     document.getElementById('edit_FineAmount').innerText = new Intl.NumberFormat('vi-VN').format(amount) + "đ";
