@@ -159,7 +159,7 @@
                                     step="0.01" id="lb_NongDo" class="form-control" oninput="previewFine()"></div>
                             <div class="form-group" id="finePreviewBox"
                                 style="background: rgba(37, 99, 235, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary); display: none;">
-                                <label style="color: var(--primary);">Mức phạt dự kiến (Nghị định 100):</label>
+                                <label style="color: var(--primary);">Mức phạt (theo Nghị định 100):</label>
                                 <div id="fineAmount" style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">
                                     0đ</div>
                                 <small id="fineDesc" style="color: var(--text-muted);"></small>
@@ -362,10 +362,26 @@
                     <input type="text" id="edit_BienSo" class="form-control">
                 </div>
                 <div id="edit_FinePreview" style="padding: 15px; background: #fffbeb; border-radius: 8px; margin-bottom: 15px; border: 1px solid #fef3c7;">
-                    <p style="font-size: 0.85rem; color: #92400e;">Mức phạt dự kiến: <b id="edit_FineAmount" style="font-size: 1.1rem;">0đ</b></p>
+                    <p style="font-size: 0.85rem; color: #92400e;">Mức phạt: <b id="edit_FineAmount" style="font-size: 1.1rem;">0đ</b></p>
                 </div>
                 <button type="button" class="btn btn-primary" style="width: 100%;" onclick="saveEditViolation()">CẬP NHẬT BIÊN BẢN</button>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CHI TIẾT BIÊN BẢN VI PHẠM -->
+    <div id="violationModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 id="violationModalTitle">Chi tiết biên bản vi phạm</h2>
+                <button class="btn btn-outline" onclick="document.getElementById('violationModal').style.display='none'">Đóng</button>
+            </div>
+            <div id="violationDetailsContent">
+                <!-- Content will be injected by JS -->
+            </div>
+            <div style="text-align: right; margin-top: 30px;">
+                <button class="btn btn-primary" onclick="document.getElementById('violationModal').style.display='none'">Đã xem</button>
+            </div>
         </div>
     </div>
 

@@ -1,7 +1,20 @@
+// Helper for Status Badge Class
+function getStatusBadgeClass(maTrangThai, hasQD = true) {
+    if (!hasQD) return 'badge-info'; // Chưa ra quyết định
+    switch (maTrangThai) {
+        case 'TTTT02': return 'badge-success'; // Đã thanh toán
+        case 'TTTT03': return 'badge-danger';  // Quá hạn
+        case 'TTTT01': return 'badge-warning'; // Chưa thanh toán
+        default: return 'badge-warning';
+    }
+}
+
 // Init User Info
 document.getElementById('displayUserName').innerText = localStorage.getItem('userName') || 'Cán bộ';
 
-// Metadata
+let allQuyetDinh = [];
+let allLvp = [];
+
 async function loadMetadata() {
     try {
         const ptRes = await fetch('/vipham/loai-phuong-tien');
@@ -11,6 +24,9 @@ async function loadMetadata() {
             ptSelect.innerHTML = '';
             pts.forEach(p => ptSelect.innerHTML += `<option value="${p.Ma_LoaiPhuongTien}">${p.TenPhuongTien}</option>`);
         }
+
+        const lvpRes = await fetch('/vipham/loai-vi-pham');
+        allLvp = await lvpRes.json();
     } catch (e) { console.error("Metadata error:", e); }
 }
 loadMetadata();
@@ -95,7 +111,12 @@ function handleApiError(err) {
 }
 
 // 4.3.4: Lập biên bản - SUBMIT & VALIDATION
+function clearValidation() {
+    document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+}
+
 async function submitForm() {
+    clearValidation();
     const hoTen = document.getElementById('lb_HoTen').value;
     const cccd = document.getElementById('lb_CCCD').value;
     const sdt = document.getElementById('lb_SDT').value;
@@ -105,15 +126,18 @@ async function submitForm() {
     const ngaySinh = document.getElementById('lb_NgaySinh').value;
     const diaChi = document.getElementById('lb_DiaChi').value;
 
-    if (!hoTen) return alert("⚠️ Vui lòng nhập Họ tên người vi phạm!");
-    if (!cccd || cccd.length !== 12) return alert("⚠️ Số CCCD phải nhập chính xác 12 chữ số!");
-    if (!sdt || !/^(0[0-9]{9})$/.test(sdt)) return alert("⚠️ Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng số 0)!");
-    if (isNaN(nongDo) || nongDo < 0) return alert("⚠️ Nồng độ cồn không hợp lệ!");
-    if (!bienSo) return alert("⚠️ Vui lòng nhập Biển số xe!");
-    if (!ngaySinh) return alert("⚠️ Vui lòng nhập Ngày sinh!");
-    if (!diaChi) return alert("⚠️ Vui lòng nhập Địa chỉ!");
+    if (!hoTen) { setInvalid('lb_HoTen'); return alert("⚠️ Vui lòng nhập Họ tên người vi phạm!"); }
+    if (!cccd || cccd.length !== 12) { setInvalid('lb_CCCD'); return alert("⚠️ Số CCCD phải nhập chính xác 12 chữ số!"); }
+    if (!sdt || !/^(0[0-9]{9})$/.test(sdt)) { setInvalid('lb_SDT'); return alert("⚠️ Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng số 0)!"); }
+    if (isNaN(nongDo) || nongDo < 0) { setInvalid('lb_NongDo'); return alert("⚠️ Nồng độ cồn không hợp lệ!"); }
+    if (!bienSo) { setInvalid('lb_BienSo'); return alert("⚠️ Vui lòng nhập Biển số xe!"); }
+    if (!ngaySinh) { setInvalid('lb_NgaySinh'); return alert("⚠️ Vui lòng nhập Ngày sinh!"); }
+    if (!diaChi) { setInvalid('lb_DiaChi'); return alert("⚠️ Vui lòng nhập Địa chỉ!"); }
 
-    let maLVP = (loaiPT === 'LPT01') ? (nongDo <= 0.25 ? 'LVP01' : (nongDo <= 0.4 ? 'LVP02' : 'LVP03')) : (nongDo <= 0.25 ? 'LVP04' : (nongDo <= 0.4 ? 'LVP05' : 'LVP06'));
+    let maMNDC = (nongDo <= 0.25 ? 'MNDC01' : (nongDo <= 0.4 ? 'MNDC02' : 'MNDC03'));
+    const matchedLvp = allLvp.find(l => l.Ma_LoaiPhuongTien === loaiPT && l.Ma_MucNongDoCon === maMNDC);
+    
+    if (!matchedLvp) return alert("⚠️ Không tìm thấy loại vi phạm phù hợp với phương tiện và nồng độ này!");
 
     const data = {
         nguoiViPham: {
@@ -131,9 +155,9 @@ async function submitForm() {
             DiaDiem: document.getElementById('lb_DiaDiem').value || 'Chốt CSGT',
             NongDoCon: nongDo,
             BienSoXe: bienSo,
-            Ma_LoaiViPham: maLVP,
+            Ma_LoaiViPham: matchedLvp.Ma_LoaiViPham,
             Ma_LoaiPhuongTien: loaiPT,
-            Ma_MucNongDoCon: nongDo <= 0.25 ? 'MNDC01' : (nongDo <= 0.4 ? 'MNDC02' : 'MNDC03'),
+            Ma_MucNongDoCon: maMNDC,
             Ma_CanBo: localStorage.getItem('maCanBo') || 'CB001'
         }
     };
@@ -161,7 +185,8 @@ async function loadQuyetDinh() {
 
     try {
         const res = await fetch('/vipham/quyet-dinh');
-        let allData = await res.json();
+        allQuyetDinh = await res.json();
+        let allData = allQuyetDinh;
 
         // 1. Table Ra Quyết định
         let dataQD = allData;
@@ -187,9 +212,10 @@ async function loadQuyetDinh() {
                         <td>${q.BienSoXe}</td>
                         <td><b style="color:var(--danger)">${new Intl.NumberFormat('vi-VN').format(displayFine)}đ</b></td>
                         <td>${q.Ma_QuyetDinh || '---'}</td>
-                        <td><span class="badge ${hasQD ? 'badge-success' : 'badge-warning'}">${q.TenTrangThai}</span></td>
+                        <td><span class="badge ${getStatusBadgeClass(q.Ma_TrangThaiThanhToan, !!q.Ma_QuyetDinh)}">${q.TenTrangThai}</span></td>
                         <td>
                             <div style="display: flex; gap: 5px;">
+                                <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;" onclick="viewViolationDetails('${q.Ma_VuViec}')">Chi tiết</button>
                                 ${hasQD
                         ? `<button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;" onclick="printDecision(${q.Ma_QuyetDinh})">In QĐ</button>`
                         : `
@@ -233,13 +259,14 @@ async function loadQuyetDinh() {
                         <td>Vi phạm nồng độ cồn</td>
                         <td><b style="color:var(--success)">${new Intl.NumberFormat('vi-VN').format(q.SoTienPhat)}đ</b></td>
                         <td>${new Date(q.ThoiGianViPham).toLocaleDateString('vi-VN')}</td>
-                        <td><span class="badge ${q.Ma_TrangThaiThanhToan === 'TTTT02' ? 'badge-success' :
-                        (q.Ma_TrangThaiThanhToan === 'TTTT03' ? 'badge-danger' : 'badge-warning')
-                    }">${q.TenTrangThai}</span></td>
+                        <td><span class="badge ${getStatusBadgeClass(q.Ma_TrangThaiThanhToan)}">${q.TenTrangThai}</span></td>
                         <td>
-                            ${q.Ma_TrangThaiThanhToan !== 'TTTT02'
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                                <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.75rem;" onclick="viewViolationDetails('${q.Ma_VuViec}')">Chi tiết</button>
+                                ${q.Ma_TrangThaiThanhToan !== 'TTTT02'
                         ? `<button class="btn btn-primary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="updatePayment(${q.Ma_QuyetDinh})">Xác nhận</button>`
                         : '<span style="color:var(--success)">Xong</span>'}
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -403,7 +430,7 @@ async function loadThongKe() {
                         <td>${v.TenNguoiViPham}</td>
                         <td>${v.BienSoXe}</td>
                         <td><b style="color:var(--danger)">${new Intl.NumberFormat('vi-VN').format(v.MucPhat)}đ</b></td>
-                        <td><span class="badge ${v.Ma_TrangThaiThanhToan === 'TTTT02' ? 'badge-success' : 'badge-warning'}">${v.TenTrangThai}</span></td>
+                        <td><span class="badge ${getStatusBadgeClass(v.Ma_TrangThaiThanhToan)}">${v.TenTrangThai}</span></td>
                     </tr>
                 `;
             });
@@ -452,7 +479,7 @@ async function viewNvpDetails(id) {
             <table class="table">
                 <thead><tr><th>Mã vụ</th><th>Thời gian</th><th>Lỗi</th><th>Tiền phạt</th><th>Trạng thái</th></tr></thead>
                 <tbody>
-                    ${data.history.map(h => `<tr><td>${h.Ma_VuViec}</td><td>${new Date(h.ThoiGianViPham).toLocaleDateString('vi-VN')}</td><td>${h.TenLoaiViPham}</td><td>${new Intl.NumberFormat('vi-VN').format(h.MucPhat)}đ</td><td>${h.TenTrangThai}</td></tr>`).join('')}
+                    ${data.history.map(h => `<tr><td>${h.Ma_VuViec}</td><td>${new Date(h.ThoiGianViPham).toLocaleDateString('vi-VN')}</td><td>${h.TenLoaiViPham}</td><td>${new Intl.NumberFormat('vi-VN').format(h.MucPhat)}đ</td><td><span class="badge ${getStatusBadgeClass(h.Ma_TrangThaiThanhToan)}">${h.TenTrangThai}</span></td></tr>`).join('')}
                 </tbody>
             </table>
         </div>
@@ -489,19 +516,17 @@ function previewFine() {
     const loaiPT = document.getElementById('lb_LoaiPT').value;
     const nongDo = parseFloat(document.getElementById('lb_NongDo').value);
     if (isNaN(nongDo) || nongDo <= 0) { document.getElementById('finePreviewBox').style.display = 'none'; return; }
-    let amount = 0; let desc = "";
-    if (loaiPT === 'LPT01') {
-        if (nongDo <= 0.25) { amount = 2000000; desc = "Mức 1: ≤ 0.25 mg/L"; }
-        else if (nongDo <= 0.4) { amount = 4000000; desc = "Mức 2: > 0.25 - 0.4 mg/L"; }
-        else { amount = 8000000; desc = "Mức 3: > 0.4 mg/L"; }
+    
+    let maMNDC = (nongDo <= 0.25 ? 'MNDC01' : (nongDo <= 0.4 ? 'MNDC02' : 'MNDC03'));
+    const found = allLvp.find(l => l.Ma_LoaiPhuongTien === loaiPT && l.Ma_MucNongDoCon === maMNDC);
+    
+    if (found) {
+        document.getElementById('finePreviewBox').style.display = 'block';
+        document.getElementById('fineAmount').innerText = new Intl.NumberFormat('vi-VN').format(found.MucPhat) + "đ";
+        document.getElementById('fineDesc').innerText = found.TenLoaiViPham;
     } else {
-        if (nongDo <= 0.25) { amount = 7000000; desc = "Mức 1: ≤ 0.25 mg/L"; }
-        else if (nongDo <= 0.4) { amount = 16000000; desc = "Mức 2: > 0.25 - 0.4 mg/L"; }
-        else { amount = 35000000; desc = "Mức 3: > 0.4 mg/L"; }
+        document.getElementById('finePreviewBox').style.display = 'none';
     }
-    document.getElementById('finePreviewBox').style.display = 'block';
-    document.getElementById('fineAmount').innerText = new Intl.NumberFormat('vi-VN').format(amount) + "đ";
-    document.getElementById('fineDesc').innerText = desc;
 }
 
 
@@ -527,41 +552,38 @@ function previewEditFine() {
         return;
     }
 
-    let amount = 0;
-    if (currentEditingVehicleType === 'LPT01') { // Xe máy
-        if (nongDo <= 0.25) amount = 2000000;
-        else if (nongDo <= 0.4) amount = 4000000;
-        else amount = 8000000;
-    } else { // Ô tô
-        if (nongDo <= 0.25) amount = 7000000;
-        else if (nongDo <= 0.4) amount = 16000000;
-        else amount = 35000000;
+    let maMNDC = (nongDo <= 0.25 ? 'MNDC01' : (nongDo <= 0.4 ? 'MNDC02' : 'MNDC03'));
+    const found = allLvp.find(l => l.Ma_LoaiPhuongTien === currentEditingVehicleType && l.Ma_MucNongDoCon === maMNDC);
+
+    if (found) {
+        document.getElementById('edit_FineAmount').innerText = new Intl.NumberFormat('vi-VN').format(found.MucPhat) + "đ";
+    } else {
+        document.getElementById('edit_FineAmount').innerText = "0đ";
     }
-    document.getElementById('edit_FineAmount').innerText = new Intl.NumberFormat('vi-VN').format(amount) + "đ";
 }
 
 async function saveEditViolation() {
+    clearValidation();
     const maVuViec = document.getElementById('edit_MaVuViec').value;
     const nongDo = parseFloat(document.getElementById('edit_NongDo').value);
     const diaDiem = document.getElementById('edit_DiaDiem').value;
     const bienSo = document.getElementById('edit_BienSo').value;
 
-    if (isNaN(nongDo) || nongDo < 0) return alert("Nồng độ cồn không hợp lệ!");
-    if (!diaDiem) return alert("Vui lòng nhập địa điểm!");
-    if (!bienSo) return alert("Vui lòng nhập biển số xe!");
+    if (isNaN(nongDo) || nongDo < 0) { setInvalid('edit_NongDo'); return alert("Nồng độ cồn không hợp lệ!"); }
+    if (!diaDiem) { setInvalid('edit_DiaDiem'); return alert("Vui lòng nhập địa điểm!"); }
+    if (!bienSo) { setInvalid('edit_BienSo'); return alert("Vui lòng nhập biển số xe!"); }
 
-    // Calculate new categories
-    let maLVP = (currentEditingVehicleType === 'LPT01')
-        ? (nongDo <= 0.25 ? 'LVP01' : (nongDo <= 0.4 ? 'LVP02' : 'LVP03'))
-        : (nongDo <= 0.25 ? 'LVP04' : (nongDo <= 0.4 ? 'LVP05' : 'LVP06'));
-
+    // Calculate new categories using allLvp
     let maMNDC = (nongDo <= 0.25 ? 'MNDC01' : (nongDo <= 0.4 ? 'MNDC02' : 'MNDC03'));
+    const matchedLvp = allLvp.find(l => l.Ma_LoaiPhuongTien === currentEditingVehicleType && l.Ma_MucNongDoCon === maMNDC);
+    
+    if (!matchedLvp) return alert("⚠️ Không tìm thấy loại vi phạm phù hợp!");
 
     const data = {
         NongDoCon: nongDo,
         DiaDiem: diaDiem,
         BienSoXe: bienSo,
-        Ma_LoaiViPham: maLVP,
+        Ma_LoaiViPham: matchedLvp.Ma_LoaiViPham,
         Ma_MucNongDoCon: maMNDC
     };
 
@@ -580,6 +602,59 @@ async function saveEditViolation() {
             alert("Lỗi khi cập nhật!");
         }
     } catch (e) { console.error(e); }
+}
+
+async function viewViolationDetails(maVuViec) {
+    const q = allQuyetDinh.find(item => item.Ma_VuViec === maVuViec);
+    if (!q) return alert("Không tìm thấy dữ liệu!");
+
+    const content = document.getElementById('violationDetailsContent');
+    content.innerHTML = `
+        <div style="background: #fff; padding: 40px; border: 1px solid #ddd; font-family: 'Times New Roman', Times, serif; line-height: 1.6; color: #000;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <p style="text-transform: uppercase; font-weight: bold; margin: 0; font-size: 1.1rem;">Cộng hòa Xã hội Chủ nghĩa Việt Nam</p>
+                <p style="font-weight: bold; margin: 0; font-size: 1.1rem;">Độc lập - Tự do - Hạnh phúc</p>
+                <p style="margin: 0;">-----------------------</p>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 35px;">
+                <h1 style="font-size: 1.5rem; text-transform: uppercase; margin-bottom: 5px; font-weight: 800;">Quyết định xử phạt vi phạm hành chính</h1>
+                <p style="font-size: 1.1rem;">Số: <b>${q.Ma_QuyetDinh || '...'}</b>/QĐ-XPVPHC</p>
+            </div>
+
+            <div style="margin-bottom: 25px; font-size: 1.1rem;">
+                <p>Căn cứ Luật Xử lý vi phạm hành chính ngày 20 tháng 06 năm 2012;</p>
+                <p>Tôi: <b>${localStorage.getItem('userName') || 'Cán bộ xử lý'}</b> - Chức vụ: Cán bộ CSGT</p>
+                <p>Đơn vị: Công an Quận Bình Thạnh</p>
+            </div>
+
+            <div style="margin-bottom: 30px; font-size: 1.1rem;">
+                <h3 style="text-transform: uppercase; font-size: 1.2rem; margin-bottom: 15px; font-weight: 700;">QUYẾT ĐỊNH XỬ PHẠT:</h3>
+                <p>1. Họ và tên: <b>${q.TenNguoiViPham}</b></p>
+                <p>2. Số CCCD: <b>${q.CanCuocCongDan}</b></p>
+                <p>3. Hành vi vi phạm: <b>Điều khiển phương tiện khi nồng độ cồn vượt mức quy định</b></p>
+                <p>4. Nồng độ cồn đo được: <b>${q.NongDoCon} mg/L khí thở</b></p>
+                <p>5. Biển số xe: <b>${q.BienSoXe}</b></p>
+                <p>6. Hình thức xử phạt: Phạt tiền</p>
+                <p>7. Số tiền phạt: <b style="font-size: 1.4rem; color: #d32f2f;">${new Intl.NumberFormat('vi-VN').format(q.SoTienPhat || q.MucPhat)} VNĐ</b></p>
+            </div>
+
+            <p style="font-style: italic; font-size: 1rem; color: #555;">(Quyết định này có hiệu lực kể từ ngày ký. Người vi phạm có trách nhiệm nộp phạt trong vòng 10 ngày làm việc).</p>
+            
+            <div style="margin-top: 40px; display: flex; justify-content: flex-end;">
+                <div style="text-align: center; width: 250px;">
+                    <p style="margin-bottom: 80px; font-weight: bold;">NGƯỜI RA QUYẾT ĐỊNH</p>
+                    <p><b>${localStorage.getItem('userName') || 'Cán bộ'}</b></p>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('violationModal').style.display = 'block';
+}
+
+function setInvalid(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('is-invalid');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

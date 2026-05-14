@@ -1,5 +1,20 @@
 let currentOfficerId = null;
 
+// Helper for Status Badge Class
+function getStatusBadgeClass(status, maTrangThai = null) {
+    // If we have the ID, use it (more reliable)
+    if (maTrangThai) {
+        if (maTrangThai === 'TTTT02') return 'badge-success';
+        if (maTrangThai === 'TTTT03') return 'badge-danger';
+        return 'badge-warning';
+    }
+    // Fallback to status name
+    if (status === 'Đã thanh toán') return 'badge-success';
+    if (status === 'Quá hạn') return 'badge-danger';
+    if (status === 'Chưa thanh toán') return 'badge-warning';
+    return 'badge-info'; // e.g. "Chưa ra quyết định"
+}
+
 async function openOfficerModal(id = null) {
     currentOfficerId = id;
     const modal = document.getElementById('officerModal');
@@ -125,7 +140,7 @@ async function loadDashboard() {
                         <td>${vp.BienSoXe}</td>
                         <td>${vp.NongDoCon} mg/L</td>
                         <td>${new Intl.NumberFormat('vi-VN').format(vp.MucPhat || 0)}đ</td>
-                        <td><span class="badge ${vp.TenTrangThai === 'Đã thanh toán' ? 'badge-success' : 'badge-warning'}">${vp.TenTrangThai}</span></td>
+                        <td><span class="badge ${getStatusBadgeClass(vp.TenTrangThai, vp.Ma_TrangThaiThanhToan)}">${vp.TenTrangThai}</span></td>
                     </tr>
                 `;
             });
@@ -425,7 +440,7 @@ async function loadDetailedStats() {
                             <td><b>${v.HoTen}</b></td>
                             <td>${new Date(v.ThoiGianViPham).toLocaleString('vi-VN')}</td>
                             <td>${new Intl.NumberFormat('vi-VN').format(v.MucPhat)}đ</td>
-                            <td><span class="badge ${v.TenTrangThai === 'Đã thanh toán' ? 'badge-success' : 'badge-danger'}">${v.TenTrangThai}</span></td>
+                            <td><span class="badge ${getStatusBadgeClass(v.TenTrangThai, v.Ma_TrangThaiThanhToan)}">${v.TenTrangThai}</span></td>
                         </tr>
                     `;
                 });
