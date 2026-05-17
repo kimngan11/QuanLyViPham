@@ -177,12 +177,11 @@ Sau khi khởi chạy thành công, mở trình duyệt và truy cập:
 
 ---
 
-## 👥 Thành Viên Thực Hiện (Project Members)
+## 👥 Thành Viên 
 
-| MSSV | Họ và Tên | Vai Trò trong Đồ Án |
-| :--- | :--- | :--- |
-| **B21XXXXX** | **Nguyễn Thị Kim Ngân** | Phát triển Frontend, Thiết kế CSDL & Backend logic |
-| **B21XXXXX** | **Thành viên 2** | Kiểm thử, viết báo cáo & sơ đồ lớp đối tượng |
+Lương Thị Kim Ngân: 
+Phát triển Frontend, Thiết kế CSDL & Backend logic
+Kiểm thử, viết báo cáo & sơ đồ lớp đối tượng
 
 ---
 *Chúc bạn có trải nghiệm tuyệt vời với Hệ thống Quản lý Vi phạm Giao thông! Nếu thấy dự án hữu ích, hãy tặng tụi mình 1 🌟 Star trên GitHub nhé!*
