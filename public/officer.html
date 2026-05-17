@@ -90,9 +90,8 @@
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                         <div style="display: flex; gap: 10px; width: 450px;">
-                            <input type="text" id="searchNvp" class="form-control"
-                                placeholder="Tìm kiếm tên hoặc số CCCD...">
-                            <button class="btn btn-primary" onclick="searchNvp()">Tìm kiếm</button>
+                            <input type="text" id="searchNvp" class="form-control" placeholder="Tìm tên hoặc CCCD..." 
+                            style="max-width: 300px;" oninput="searchNvp()">
                         </div>
                         <div id="pagination-info" style="color: var(--text-muted); font-size: 0.9rem;"></div>
                     </div>
@@ -186,9 +185,8 @@
                 <h1 style="margin-bottom: 25px;">Ra quyết định & In quyết định xử phạt</h1>
                 <div class="card">
                     <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                        <input type="text" id="searchQdKeyword" class="form-control"
-                            placeholder="Mã QĐ, CCCD hoặc Biển số...">
-                        <button class="btn btn-primary" onclick="loadQuyetDinh()">Tìm kiếm</button>
+                        <input type="text" id="searchQdKeyword" class="form-control" placeholder="Tìm mã QĐ, CCCD, biển số..." 
+                            style="max-width: 350px;" oninput="loadQuyetDinh()">
                     </div>
                     <div class="table-container">
                         <table id="qdTable">

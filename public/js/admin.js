@@ -118,6 +118,7 @@ function showTab(tabId) {
 }
 
 async function loadDashboard() {
+    const kw = document.getElementById('searchKeyword')?.value.toLowerCase().trim() || "";
     try {
         const statsRes = await fetch('/admin/stats');
         const stats = await statsRes.json();
@@ -128,7 +129,16 @@ async function loadDashboard() {
         document.getElementById('stat-violators').innerText = stats.totalViolators || 0;
 
         const res = await fetch('/vipham');
-        const data = await res.json();
+        let data = await res.json();
+
+        if (kw) {
+            data = data.filter(vp =>
+                (vp.Ma_VuViec && vp.Ma_VuViec.toLowerCase().includes(kw)) ||
+                (vp.TenNguoiViPham && vp.TenNguoiViPham.toLowerCase().includes(kw)) ||
+                (vp.BienSoXe && vp.BienSoXe.toLowerCase().includes(kw))
+            );
+        }
+
         const tbody = document.querySelector('#violationTable tbody');
         if (tbody) {
             tbody.innerHTML = '';
@@ -149,9 +159,19 @@ async function loadDashboard() {
 }
 
 async function loadOfficers() {
+    const kw = document.getElementById('searchOfficerKeyword')?.value.toLowerCase().trim() || "";
     try {
         const res = await fetch('/admin/can-bo');
-        const data = await res.json();
+        let data = await res.json();
+
+        if (kw) {
+            data = data.filter(cb =>
+                (cb.Ma_CanBo && cb.Ma_CanBo.toLowerCase().includes(kw)) ||
+                (cb.HoTen && cb.HoTen.toLowerCase().includes(kw)) ||
+                (cb.SoDienThoai && cb.SoDienThoai.includes(kw))
+            );
+        }
+
         const tbody = document.querySelector('#officerTable tbody');
         if (tbody) {
             tbody.innerHTML = '';
